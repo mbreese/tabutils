@@ -19,40 +19,45 @@ def tab_view(fname,preview_lines=100):
     preview_buf = []
     prev_count = 0
     inpreview = True
-    with gzip_opener(fname) as f:
-        for line in f:
-            if inpreview and line[0] == '#':
-                preview_buf.append(line)
-            else:
-                if inpreview:
-                    cols = line.rstrip().split('\t')
-                    
-                    for i,col in enumerate(cols):
-                        if len(colsizes) <= i:
-                            colsizes.append(len(col))
-                            coltypes.append('i')
-                        elif len(col) > colsizes[i]:
-                            colsizes[i] = len(col)
-                        try:
-                            v = int(col)
-                        except:
-                            coltypes[i] = 't'
-
+    try:
+        with gzip_opener(fname) as f:
+            for line in f:
+                if inpreview and line[0] == '#':
                     preview_buf.append(line)
-                    prev_count += 1
-                    if prev_count >= preview_lines:
-                        colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
-                        for preview in preview_buf:
-                            _write_cols(preview,colsizes,coltypes)
-                        preview_buf = None
-                        inpreview=False
                 else:
-                    _write_cols(line,colsizes,coltypes)
+                    if inpreview:
+                        cols = line.rstrip().split('\t')
+                    
+                        for i,col in enumerate(cols):
+                            if len(colsizes) <= i:
+                                colsizes.append(len(col))
+                                coltypes.append('i')
+                            elif len(col) > colsizes[i]:
+                                colsizes[i] = len(col)
+                            try:
+                                v = int(col)
+                            except:
+                                coltypes[i] = 't'
 
-    if preview_buf:
-        colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
-        for preview in preview_buf:
-            _write_cols(preview,colsizes,coltypes)
+                        preview_buf.append(line)
+                        prev_count += 1
+                        if prev_count >= preview_lines:
+                            colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
+                            for preview in preview_buf:
+                                _write_cols(preview,colsizes,coltypes)
+                            preview_buf = None
+                            inpreview=False
+                    else:
+                        _write_cols(line,colsizes,coltypes)
+
+        if preview_buf:
+            colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
+            for preview in preview_buf:
+                _write_cols(preview,colsizes,coltypes)
+    except KeyboardInterrupt:
+        print ""
+        pass
+    
 
 def _write_cols(line,colsizes,coltypes):
     cols = line.rstrip().split('\t')
