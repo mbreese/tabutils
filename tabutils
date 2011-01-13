@@ -1,0 +1,20 @@
+#!/bin/bash
+if [ "$1" == "" ]; then
+    echo "Usage: tabutils action"
+    echo ""
+    echo "[Actions]"
+    echo "filter - Filters a tab-delmited file based upon critera"
+    echo "merge  - Merges tab-delimited files together, combining common columns"
+    echo "view   - A data aware tab-delimited file viewer"
+    exit -1
+fi
+
+if [ "$1" == "help" ]; then
+    action=tab_$2.py
+    `dirname $0`/tab_utils/$action -h
+else
+    action=tab_$1.py
+    shift
+
+    `dirname $0`/tab_utils/$action $@
+fi
