@@ -91,10 +91,13 @@ def filter_file(fname,criteria):
             good = True
             if criteria.filter(cols):
                 sys.stdout.write(line)
-                
-if __name__ == '__main__':
-    if len(sys.argv) < 2 or not os.path.exists(sys.argv[1]):
+
+def main(argv):
+    if len(argv) < 1 or not os.path.exists(argv[0]):
         usage()
         sys.exit(1)
-    criteria = Criteria.parse_args(sys.argv[2:])
-    filter_file(sys.argv[1],criteria)
+    criteria = Criteria.parse_args(argv[1:])
+    filter_file(argv[0],criteria)
+                
+if __name__ == '__main__':
+    main(sys.argv[1:])
