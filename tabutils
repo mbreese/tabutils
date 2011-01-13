@@ -11,12 +11,15 @@ if [ "$1" == "" ]; then
     exit -1
 fi
 
+REAL=`python -c 'import os,sys;print os.path.realpath(sys.argv[1])' "$0"`
+DIR=`dirname "$REAL"`
+
 if [ "$1" == "help" ]; then
     action=tab_$2.py
-    `dirname $0`/tab_utils/$action -h
+    "$DIR"/tab_utils/$action -h
 else
     action=tab_$1.py
     shift
 
-    `dirname $0`/tab_utils/$action $@
+    "$DIR"/tab_utils/$action $@
 fi
