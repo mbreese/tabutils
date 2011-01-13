@@ -1,11 +1,13 @@
 #!/bin/bash
 if [ "$1" == "" ]; then
-    echo "Usage: tabutils action"
+    echo "Usage: tabutils COMMAND"
     echo ""
-    echo "[Actions]"
-    echo "filter - Filters a tab-delmited file based upon critera"
-    echo "merge  - Merges tab-delimited files together, combining common columns"
-    echo "view   - A data aware tab-delimited file viewer"
+    echo "Commands"
+    echo "    filter - Filters a tab-delmited file based upon critera"
+    echo "    merge  - Merges tab-delimited files together, combining common columns"
+    echo "    view   - A data aware tab-delimited file viewer"
+    echo ""
+    echo "See 'tabutils help CMD' for more information about a specific command"
     exit -1
 fi
 
