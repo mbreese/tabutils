@@ -1,4 +1,4 @@
-import sys
+import sys,os
 
 class gzip_opener:
     '''
