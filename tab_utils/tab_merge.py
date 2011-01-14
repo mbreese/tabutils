@@ -9,7 +9,7 @@ from support import filenames_to_uniq
 class MergeException(Exception):
     pass
     
-def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=False,headercomment=False,keydesc=False):
+def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False):
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     files = []
     for fname in fnames:
