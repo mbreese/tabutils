@@ -67,4 +67,5 @@ def filenames_to_uniq(names,new_delim='.'):
                 nn.append(nameword[i])
         nn.reverse()
         newnames.append(new_delim.join(nn))
+        
     return newnames

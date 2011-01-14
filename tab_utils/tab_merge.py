@@ -29,6 +29,7 @@ def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
 
     if header_out:
         sys.stdout.write('\n')
+    
     headers = True
     line_num = 0
     
@@ -56,9 +57,9 @@ def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
             for f in files:
                 lines.append(f.next())
             line_num += 1
-        except:
+        except Exception,e:
+            print e
             break
-            
         outcols = []
         common = []
         values = []
@@ -82,17 +83,18 @@ def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
                     col_num += 1
                     if t !=c:
                         raise MergeException("Invalid common values: %s != %s (line %s, col %s)" % (t,c,line_num,col_num))
-
+        if not values:
+            continue
         outcols = common
         if headers:
-            if collate:
+            if not collate:
                 for name in names:
                     for j in uncommon_cols:
-                        outcols.append('%s %s' % (name,cols[j]))
+                        outcols.append('%s %s' % (name,values[0][j]))
             else:
                 for j in uncommon_cols:
                     for name in names:
-                        outcols.append('%s %s' % (name,cols[j]))
+                        outcols.append('%s %s' % (name,values[0][j]))
         else:
             if collate:
                 for j in uncommon_cols:
@@ -135,6 +137,16 @@ Options:
 
 """ % os.path.basename(sys.argv[0])
 
+def _split_cols(arg):
+    ret=[]
+    for x in arg.split(','):
+        if '-' in x:
+            s,e = x.split('-')
+            ret.extend(list(xrange(int(s)-1,int(e))))
+        else:
+            ret.append(int(x)-1)
+    return ret
+
 def main(argv):
     noheader=False
     collate = False
@@ -151,9 +163,9 @@ def main(argv):
         elif arg == '-collate':
             collate = True
         elif not common:
-            common = [int(x)-1 for x in arg.split(',')]
+            common = _split_cols(arg)
         elif not uncommon:
-            uncommon = [int(x)-1 for x in arg.split(',')]
+            uncommon = _split_cols(arg)
         elif os.path.exists(arg):
             files.append(arg)
         else:
