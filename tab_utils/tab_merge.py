@@ -194,7 +194,7 @@ first non-comment, non-blank row is the header.
 Options:
     -headercomment     the header is last commented line ('#')
     -noheader          the files have no header row
-    -collate           collate uncommon columns
+    -collate           order uncommon values by file first, not column
     
     -keycols col,col   if there are missing values, use these columns to 
                        determine which file has missing data.  If the col ends 
@@ -233,7 +233,7 @@ def _split_cols(arg):
 
 def main(argv):
     noheader=False
-    collate = False
+    collate = True
     common = None
     uncommon = None
     keycols = None
@@ -259,7 +259,7 @@ def main(argv):
         elif arg == '-noheader':
             noheader = True
         elif arg == '-collate':
-            collate = True
+            collate = False
         elif not common:
             common = _split_cols(arg)[0]
         elif not uncommon:
