@@ -64,6 +64,10 @@ def tab_view(fname,preview_lines=100):
 
 def _write_cols(line,colsizes,coltypes):
     cols = line.rstrip().split('\t')
+
+    while len(cols) < len(colsizes):
+        cols.append('')
+        
     for i,col in enumerate(cols):
         if i>=len(colsizes):
             val = '%s' % col # for headers w/o values
