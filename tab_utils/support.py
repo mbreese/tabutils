@@ -7,6 +7,8 @@ class gzip_opener:
     '''
     def __init__(self,fname):
         self.fname = fname
+    def open(self):
+        return self.__enter__()
     def __enter__(self):
         if self.fname == '-':
             self.f = sys.stdin
