@@ -9,31 +9,61 @@ from support import filenames_to_uniq
 class MergeException(Exception):
     pass
     
-def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
+def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=False,headercomment=False,keydesc=False):
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     files = []
     for fname in fnames:
         files.append(open(fname))
 
-    header_out = False
-    for i,f in enumerate(files):
-        first = True
+    commented_lines = {}
+    for name,f in zip(names,files):
         for line in f:
             if line[0] == '#':
-                header_out = True
-                sys.stdout.write('# %s %s' % (names[i],line[1:]))
-                first = False
+                if not name in commented_lines:
+                    commented_lines[name] = []
+                    
+                commented_lines[name].append(line[1:])
             else:
                 break
         f.seek(0)
-
-    if header_out:
-        sys.stdout.write('\n')
+    
+    if commented_lines:
+        commentsout = False
+        for name in commented_lines:
+            for line in commented_lines[name][:-1]:
+                commentsout = True
+                sys.stdout.write('# %s %s' % (name,line))
+        if commentsout:
+            sys.stdout.write('\n')
     
     headers = True
-    line_num = 0
+
+    # header is the last commented line
+    if headercomment:
+        header_cols = []
+        for name in commented_lines:
+            cols = commented_lines[name][-1].rstrip().split('\t')
+            for i in common_cols:
+                header_cols.append(cols[i])
+            if not collate:
+                for j in uncommon_cols:
+                    for name in names:
+                        header_cols.append('%s %s' % (name,cols[j]))
+            else:
+                for name in names:
+                    for j in uncommon_cols:
+                        header_cols.append('\t%s %s' % (name,cols[j]))
+            break
+        sys.stdout.write('\t'.join(header_cols))
+        sys.stdout.write('\n')
+        headers = False
     
-    if noheader:
+    #no header... just show column #
+    
+    elif noheader:
+        for common in common_cols[1:]:
+            sys.stdout.write('\t')
+            
         if len(uncommon_cols) > 1:
             if not collate:
                 for j in uncommon_cols:
@@ -49,44 +79,73 @@ def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
                 sys.stdout.write('\t%s' % (name))
 
         sys.stdout.write('\n')
-        headers=False
+        headers = False
+        
+    lines = []
+    for f in files:
+        lines.append(None)
         
     while True:
-        lines = []
-        try:
-            for f in files:
-                lines.append(f.next())
-            line_num += 1
-        except Exception,e:
-            print e
-            break
-        outcols = []
-        common = []
-        values = []
+        for i,f in enumerate(files):
+            try:
+                while not lines[i]:
+                    lines[i] = f.next()
+                    
+                    if lines[i][0] == '#' or lines[i].strip() == '':
+                        lines[i] = None
+                    
+            except Exception,e:
+                lines[i] = None
+                pass
         
-        for (i,line) in enumerate(lines):
-            if line[0] == '#' or line.strip() == '':
+        good = False
+        for line in lines:
+            if line:
+                good = True
+        if not good:
+            break
+        
+        outcols = []
+        values = []
+        common_keys = []
+        num_of_columns = len(common_cols) + len(uncommon_cols)
+        
+        # look for missing values
+        for i,line in enumerate(lines):
+            if not line:
+                values.append(['',] * num_of_columns)
                 continue
                 
-            cols = line.strip().split('\t')
+            cols = line.rstrip().split('\t')
             values.append(cols)
             
-            if not common:
-                for j in common_cols:
-                    common.append(cols[j])
+            keys = []
+            for j,num in zip(keycols[0],keycols[1]):
+                if num:
+                    keys.append(float(cols[j]))
+                else:
+                    keys.append(cols[j])
+            common_keys.append((keys,i))
+            
+        common_keys.sort()
+        if keydesc:
+            common_keys.reverse()
+            
+        for keys,i in common_keys:
+            if keys == common_keys[0][0]:
+                lines[i] = None
+                if not outcols:
+                    for j in common_cols:
+                        outcols.append(values[i][j])
             else:
-                test=[]
-                for j in common_cols:
-                    test.append(cols[j])
-                col_num=0
-                for c,t in zip(common,test):
-                    col_num += 1
-                    if t !=c:
-                        raise MergeException("Invalid common values: %s != %s (line %s, col %s)" % (t,c,line_num,col_num))
+                values[i] = ['',] * num_of_columns
+
         if not values:
             continue
-        outcols = common
+
+        # first line is header
         if headers:
+            headers = False
             if not collate:
                 for name in names:
                     for j in uncommon_cols:
@@ -114,9 +173,6 @@ def merge_files(fnames,common_cols,uncommon_cols, noheader=False,collate=False):
         if outcols:
             sys.stdout.write('%s\n' % '\t'.join(outcols))
 
-        if headers and outcols:
-            headers = False
-
     
     for f in files:
         f.close()
@@ -128,44 +184,86 @@ Usage: %s {opts} common_cols merge_cols files
 
 common_cols and merge_cols should be a comma-separated list of column numbers.
 
-Files should be in the same order.  New column names will be guessed 
-based upon the filenames.
+Files must be in the same sort order (given as keycols if not ascending text).
+If the case of extra rows in one of the files, blank values will be 
+substituted. New column names will be guessed based upon the filenames. 
+Commented lines and blank lines are ignored, except for any commented lines 
+that are at the begining of the file - these are kept.  This assumes that the 
+first non-comment, non-blank row is the header.
 
 Options:
-    -noheader    the files have no header row
-    -collate     collate uncommon columns
+    -headercomment     the header is last commented line ('#')
+    -noheader          the files have no header row
+    -collate           collate uncommon columns
+    
+    -keycols col,col   if there are missing values, use these columns to 
+                       determine which file has missing data.  If the col ends 
+                       in 'n', this is taken to be a number.
+                       (defaults to common cols, in order)
+                       
+    -keydesc           keys are sorted descending order
+                       (defaults to ascending)
+
+Valid column definitions:
+    1,2,3,4
+    1-4
+    1-4,5
 
 """ % os.path.basename(sys.argv[0])
 
 def _split_cols(arg):
     ret=[]
+    nums=[]
     for x in arg.split(','):
+        num = False
+        if x[-1] == 'n':
+            num = True
+            x = x[:-1]
+        
         if '-' in x:
             s,e = x.split('-')
-            ret.extend(list(xrange(int(s)-1,int(e))))
+            vals = list(xrange(int(s)-1,int(e)))
+            ret.extend(vals)
+            for v in vals:
+                nums.append(num)
         else:
             ret.append(int(x)-1)
-    return ret
+            nums.append(num)
+    return ret,nums
 
 def main(argv):
     noheader=False
     collate = False
     common = None
     uncommon = None
+    keycols = None
+    keydesc = False
+    headercomment = False
     files=[]
+    
+    last = None
     
     for arg in argv:
         if arg == '-h':
             usage()
             sys.exit(1)
+        if last == '-keycols':
+            keycols = _split_cols(arg)
+            last = None
+        elif arg == '-keycols':
+            last = arg
+        elif arg == '-keydesc':
+            keydesc = True
+        elif arg == '-headercomment':
+            headercomment = True
         elif arg == '-noheader':
             noheader = True
         elif arg == '-collate':
             collate = True
         elif not common:
-            common = _split_cols(arg)
+            common = _split_cols(arg)[0]
         elif not uncommon:
-            uncommon = _split_cols(arg)
+            uncommon = _split_cols(arg)[0]
         elif os.path.exists(arg):
             files.append(arg)
         else:
@@ -174,8 +272,11 @@ def main(argv):
     if not files or not common or not uncommon:
         usage()
         sys.exit(1)
-        
-    merge_files(files,common,uncommon,noheader,collate)
+    
+    if not keycols:
+        keycols = (common,[False,]*len(common))
+    
+    merge_files(files,common,uncommon,keycols,noheader,collate,headercomment,keydesc)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
