@@ -81,16 +81,16 @@ class Criteria(object):
         return float(val) >= float(arg)
 
 def filter_file(fname,criteria):
-    f = gzip_opener(fname).open():
-        for line in f:
-            if line[0] == '#':
-                sys.stdout.write(line)
-                continue
-                
-            cols = line.strip().split()
-            good = True
-            if criteria.filter(cols):
-                sys.stdout.write(line)
+    f = gzip_opener(fname).open()
+    for line in f:
+        if line[0] == '#':
+            sys.stdout.write(line)
+            continue
+            
+        cols = line.strip().split()
+        good = True
+        if criteria.filter(cols):
+            sys.stdout.write(line)
     if f != sys.stdin:
         f.close()
 
