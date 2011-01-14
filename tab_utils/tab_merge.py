@@ -158,7 +158,7 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
                     for name in names:
                         outcols.append('%s %s' % (name,values[0][j]))
         else:
-            if collate:
+            if not collate:
                 for j in uncommon_cols:
                     for cols in values:
                         if len(cols)>j:
