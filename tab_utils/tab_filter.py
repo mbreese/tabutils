@@ -81,7 +81,7 @@ class Criteria(object):
         return float(val) >= float(arg)
 
 def filter_file(fname,criteria):
-    with gzip_opener(fname) as f:
+    f = gzip_opener(fname).open():
         for line in f:
             if line[0] == '#':
                 sys.stdout.write(line)
@@ -91,6 +91,8 @@ def filter_file(fname,criteria):
             good = True
             if criteria.filter(cols):
                 sys.stdout.write(line)
+    if f != sys.stdin:
+        f.close()
 
 def main(argv):
     if len(argv) < 1 or not os.path.exists(argv[0]):

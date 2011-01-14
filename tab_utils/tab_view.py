@@ -49,7 +49,8 @@ def tab_view(fname,preview_lines=100):
                         inpreview=False
                 else:
                     _write_cols(line,colsizes,coltypes)
-
+        if f != sys.stdin:
+            f.close()
         if preview_buf:
             colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
             for preview in preview_buf:
