@@ -52,7 +52,7 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
             else:
                 for name in names:
                     for j in uncommon_cols:
-                        header_cols.append('\t%s %s' % (name,cols[j]))
+                        header_cols.append('%s %s' % (name,cols[j]))
             break
         sys.stdout.write('\t'.join(header_cols))
         sys.stdout.write('\n')
@@ -61,23 +61,26 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
     #no header... just show column #
     
     elif noheader:
+        header_cols = []
         for common in common_cols[1:]:
+            header_cols.append('')
             sys.stdout.write('\t')
             
         if len(uncommon_cols) > 1:
             if not collate:
                 for j in uncommon_cols:
                     for name in names:
-                        sys.stdout.write('\t%s col %s' % (name,j))
+                        header_cols.append('%s col %s' % (name,j))
             else:
                 for name in names:
                     for j in uncommon_cols:
-                        sys.stdout.write('\t%s col %s' % (name,j))
+                        header_cols.append('%s col %s' % (name,j))
                 
         else:
             for name in names:
-                sys.stdout.write('\t%s' % (name))
+                header_cols.append('%s' % (name))
 
+        sys.stdout.write('\t'.join(header_cols))
         sys.stdout.write('\n')
         headers = False
         
@@ -233,7 +236,7 @@ def _split_cols(arg):
 
 def main(argv):
     noheader=False
-    collate = True
+    collate = False
     common = None
     uncommon = None
     keycols = None
@@ -259,7 +262,7 @@ def main(argv):
         elif arg == '-noheader':
             noheader = True
         elif arg == '-collate':
-            collate = False
+            collate = True
         elif not common:
             common = _split_cols(arg)[0]
         elif not uncommon:
