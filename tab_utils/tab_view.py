@@ -57,6 +57,9 @@ def tab_view(fname,preview_lines=100):
     except KeyboardInterrupt:
         print ""
         pass
+    except IOError:
+        print ""
+        pass
     
 
 def _write_cols(line,colsizes,coltypes):
