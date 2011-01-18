@@ -33,6 +33,10 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
             for line in commented_lines[name][:-1]:
                 commentsout = True
                 sys.stdout.write('# %s %s' % (name,line))
+            if not headercomment:
+                commentsout = True
+                sys.stdout.write('# %s %s' % (name,commented_lines[name][-1]))
+                
         if commentsout:
             sys.stdout.write('\n')
     
@@ -150,12 +154,12 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
         if headers:
             headers = False
             if not collate:
-                for name in names:
-                    for j in uncommon_cols:
-                        outcols.append('%s %s' % (name,values[0][j]))
-            else:
                 for j in uncommon_cols:
                     for name in names:
+                        outcols.append('%s %s' % (name,values[0][j]))
+            else:
+                for name in names:
+                    for j in uncommon_cols:
                         outcols.append('%s %s' % (name,values[0][j]))
         else:
             if not collate:
