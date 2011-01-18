@@ -9,7 +9,7 @@ from support import gzip_opener
 def usage():
     print __doc__
     print """\
-Usage: %s file.txt {criteria}
+Usage: %s -header file.txt {criteria}
 
 Where criteria is a set of operations in the form of:
 col# operation value
@@ -32,7 +32,7 @@ contains
 
 All comment lines are printed as-is.
 """ % os.path.basename(sys.argv[0])
-
+    sys.exit(1)
 class Criteria(object):
     @staticmethod
     def parse_args(args):
@@ -80,11 +80,16 @@ class Criteria(object):
     def gte(self,val,arg):
         return float(val) >= float(arg)
 
-def filter_file(fname,criteria):
+def filter_file(fname,criteria,header):
     f = gzip_opener(fname).open()
+    line_num = 0
     for line in f:
         if line[0] == '#':
             sys.stdout.write(line)
+            continue
+        if line_num == 0 and header:
+            sys.stdout.write(line)
+            line_num += 1
             continue
             
         cols = line.strip().split()
@@ -95,11 +100,23 @@ def filter_file(fname,criteria):
         f.close()
 
 def main(argv):
-    if len(argv) < 1 or not os.path.exists(argv[0]):
+    header = False
+    fname = None
+    criteria_args = []
+    for arg in sys.argv[1:]:
+        if arg == '-header':
+            header = True
+        elif not fname and os.path.exists(arg):
+            fname = arg
+        else:
+            criteria_args.append(arg)
+
+    criteria = Criteria.parse_args(criteria_args)
+    
+    if not criteria or not fname:
         usage()
-        sys.exit(1)
-    criteria = Criteria.parse_args(argv[1:])
-    filter_file(argv[0],criteria)
+    
+    filter_file(fname,criteria,header)
                 
 if __name__ == '__main__':
     main(sys.argv[1:])
