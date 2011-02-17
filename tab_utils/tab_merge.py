@@ -124,6 +124,9 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
                 continue
                 
             cols = line.rstrip().split('\t')
+            if not cols:
+                values.append(['',] * num_of_columns)
+                
             values.append(cols)
             
             keys = []
@@ -281,7 +284,7 @@ def main(argv):
         sys.exit(1)
     
     if not keycols:
-        keycols = (common,[False,]*len(common))
+        keycols = common
     
     merge_files(files,common,uncommon,keycols,noheader,collate,headercomment,keydesc)
 
