@@ -131,7 +131,7 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
             
             keys = []
             for j,num in zip(keycols[0],keycols[1]):
-                if num:
+                if num and not headers:
                     keys.append(float(cols[j]))
                 else:
                     keys.append(cols[j])
