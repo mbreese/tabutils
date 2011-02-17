@@ -194,7 +194,7 @@ Usage: %s {opts} common_cols merge_cols files
 
 common_cols and merge_cols should be a comma-separated list of column numbers.
 
-Files must be in the same sort order (given as keycols if not ascending text).
+Files must be in the same sort order (given as  if not ascending text).
 If the case of extra rows in one of the files, blank values will be 
 substituted. New column names will be guessed based upon the filenames. 
 Commented lines and blank lines are ignored, except for any commented lines 
@@ -271,9 +271,9 @@ def main(argv):
         elif arg == '-collate':
             collate = True
         elif not common:
-            common = _split_cols(arg)[0]
+            common = _split_cols(arg)
         elif not uncommon:
-            uncommon = _split_cols(arg)[0]
+            uncommon = _split_cols(arg)
         elif os.path.exists(arg):
             files.append(arg)
         else:
@@ -286,7 +286,7 @@ def main(argv):
     if not keycols:
         keycols = common
     
-    merge_files(files,common,uncommon,keycols,noheader,collate,headercomment,keydesc)
+    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
