@@ -13,7 +13,7 @@ This can then be fed into something like 'less' for paging
 import sys,os,math
 from support import gzip_opener
 
-def tab_view(fname,preview_lines=100):
+def tab_view(fname,preview_lines=100,delim='\t'):
     colsizes = []
     coltypes = []
     preview_buf = []
@@ -26,7 +26,7 @@ def tab_view(fname,preview_lines=100):
                 preview_buf.append(line)
             else:
                 if inpreview:
-                    cols = line.rstrip().split('\t')
+                    cols = line.rstrip().split(delim)
                 
                     for i,col in enumerate(cols):
                         if len(colsizes) <= i:
@@ -90,11 +90,12 @@ def _write_cols(line,colsizes,coltypes):
     
 def usage():
     print __doc__
-    print """Usage: %s {-l lines} filename.tab
+    print """Usage: %s {-l lines} {-d delim} filename.tab
 
 Options:
 -l lines  The number of lines to read in to estimate the size of a column.
           [default 100]
+-d delim  Use this (opposed to a tab) for the delimiter
 
 """ % os.path.basename(sys.argv[0])
     sys.exit(1)
@@ -102,6 +103,7 @@ Options:
 def main(argv):
     fname = '-'
     lines = 100
+    delim = '\t'
     
     last = None
     for arg in argv:
@@ -110,14 +112,16 @@ def main(argv):
         elif last == '-l':
             lines = int(arg)
             last = None
-        elif arg == '-l':
+        elif last == '-d':
+            delim = arg
+        elif arg in ['-l','-d']:
             last = arg
         elif arg == '-':
             fname = '-'
         elif os.path.exists(arg):
             fname = arg
         
-    tab_view(fname,lines)
+    tab_view(fname,lines,delim)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
