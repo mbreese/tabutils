@@ -13,12 +13,13 @@ This can then be fed into something like 'less' for paging
 import sys,os,math
 from support import gzip_opener
 
-def tab_view(fname,preview_lines=100,delim='\t'):
+def tab_view(fname,preview_lines=100,delim='\t',max_size=None):
     colsizes = []
     coltypes = []
     preview_buf = []
     prev_count = 0
     inpreview = True
+
     try:
         f = gzip_opener(fname).open()
         for line in f:
@@ -42,7 +43,10 @@ def tab_view(fname,preview_lines=100,delim='\t'):
                     preview_buf.append(line)
                     prev_count += 1
                     if prev_count >= preview_lines:
-                        colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
+                        if max_size:
+                            colsizes = [ min(max_size,int(math.ceil(x * 1.2))) for x in colsizes ]
+                        else:
+                            colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
                         for preview in preview_buf:
                             _write_cols(preview,colsizes,coltypes)
                         preview_buf = None
@@ -90,12 +94,14 @@ def _write_cols(line,colsizes,coltypes):
     
 def usage():
     print __doc__
-    print """Usage: %s {-l lines} {-d delim} filename.tab
+    print """Usage: %s {opts} filename.tab
 
 Options:
--l lines  The number of lines to read in to estimate the size of a column.
-          [default 100]
--d delim  Use this (opposed to a tab) for the delimiter
+-l lines    The number of lines to read in to estimate the size of a column.
+            [default 100]
+-d delim    Use this (opposed to a tab) for the delimiter
+
+-max size   The maximum length of a column (default: unlimited)
 
 """ % os.path.basename(sys.argv[0])
     sys.exit(1)
@@ -104,7 +110,7 @@ def main(argv):
     fname = '-'
     lines = 100
     delim = '\t'
-    
+    max_size = None
     last = None
     for arg in argv:
         if arg in ['-h','--help']:
@@ -114,14 +120,18 @@ def main(argv):
             last = None
         elif last == '-d':
             delim = arg
-        elif arg in ['-l','-d']:
+            last = None
+        elif last == '-max':
+            max_size = int(arg)
+            last = None
+        elif arg in ['-l','-d','-max']:
             last = arg
         elif arg == '-':
             fname = '-'
         elif os.path.exists(arg):
             fname = arg
         
-    tab_view(fname,lines,delim)
+    tab_view(fname,lines,delim,max_size)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
