@@ -12,6 +12,7 @@ class MergeException(Exception):
 def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False):
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     files = []
+    file_col_count = 0
     for fname in fnames:
         files.append(open(fname))
 
@@ -130,6 +131,9 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
             if not cols:
                 missing_values = True
                 values.append(['',] * num_of_columns)
+            
+            while len(cols) < file_col_count:
+                cols.append('')
                 
             values.append(cols)
             
@@ -164,6 +168,8 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
         # first line is header
         if headers:
             headers = False
+            if not file_col_count:
+                file_col_count = len(values[0])
             if not collate:
                 for j in uncommon_cols:
                     for name in names:
