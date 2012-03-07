@@ -9,7 +9,7 @@ from support import filenames_to_uniq
 class MergeException(Exception):
     pass
     
-def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False):
+def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False):
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     files = []
     for fname in fnames:
@@ -93,6 +93,8 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
         lines.append(None)
         
     while True:
+        missing_values = False
+        
         for i,f in enumerate(files):
             try:
                 while not lines[i]:
@@ -120,11 +122,13 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
         # look for missing values
         for i,line in enumerate(lines):
             if not line:
+                missing_values = True
                 values.append(['',] * num_of_columns)
                 continue
                 
             cols = line.rstrip().split('\t')
             if not cols:
+                missing_values = True
                 values.append(['',] * num_of_columns)
                 
             values.append(cols)
@@ -148,9 +152,13 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
                     for j in common_cols:
                         outcols.append(values[i][j])
             else:
+                missing_values = True
                 values[i] = ['',] * num_of_columns
 
         if not values:
+            continue
+
+        if nomissing and missing_values:
             continue
 
         # first line is header
@@ -204,6 +212,7 @@ first non-comment, non-blank row is the header.
 Options:
     -headercomment     the header is last commented line ('#')
     -noheader          the files have no header row
+    -nomissing         discard rows with missing values
     -collate           order uncommon values by file first, not column
     
     -keycols col,col   if there are missing values, use these columns to 
@@ -249,6 +258,7 @@ def main(argv):
     keycols = None
     keydesc = False
     headercomment = False
+    nomissing = False
     files=[]
     
     last = None
@@ -264,6 +274,8 @@ def main(argv):
             last = arg
         elif arg == '-keydesc':
             keydesc = True
+        elif arg == '-nomissing':
+            nomissing = True
         elif arg == '-headercomment':
             headercomment = True
         elif arg == '-noheader':
@@ -286,7 +298,7 @@ def main(argv):
     if not keycols:
         keycols = common
     
-    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc)
+    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc,nomissing)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
