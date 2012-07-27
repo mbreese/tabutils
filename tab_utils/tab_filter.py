@@ -92,7 +92,7 @@ def filter_file(fname,criteria,header):
             line_num += 1
             continue
             
-        cols = line.strip().split()
+        cols = line.strip().split('\t')
         good = True
         if criteria.filter(cols):
             sys.stdout.write(line)
