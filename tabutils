@@ -25,7 +25,7 @@ if [ "$1" == "help" ]; then
     fi
     "$DIR"/tab_utils/$action -h
 elif [ "$1" == "less" ]; then
-    "$DIR"/tab_utils/tab_view.py $@ | less -S
+    "$DIR"/tab_utils/tab_view.py $@ 2> /dev/null | less -S
 else
     action=tab_$1.py
     if [ ! -e "$DIR"/tab_utils/$action ]; then
