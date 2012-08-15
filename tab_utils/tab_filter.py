@@ -106,7 +106,7 @@ def main(argv):
     for arg in sys.argv[1:]:
         if arg == '-header':
             header = True
-        elif not fname and os.path.exists(arg):
+        elif not fname and (os.path.exists(arg) or arg == '-'):
             fname = arg
         else:
             criteria_args.append(arg)
