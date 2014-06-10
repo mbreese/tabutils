@@ -13,7 +13,7 @@ This can then be fed into something like 'less' for paging
 import sys,os,math
 from support import gzip_opener
 
-def tab_view(fname,preview_lines=100,delim='\t',max_size=None):
+def tab_view(fname,preview_lines=100,delim='\t',max_size=None, min_size=0):
     colsizes = []
     coltypes = []
     preview_buf = []
@@ -44,9 +44,9 @@ def tab_view(fname,preview_lines=100,delim='\t',max_size=None):
                     prev_count += 1
                     if prev_count >= preview_lines:
                         if max_size:
-                            colsizes = [ min(max_size,int(math.ceil(x * 1.2))) for x in colsizes ]
+                            colsizes = [ min(max_size, int(math.ceil(x * 1.2))) for x in colsizes ]
                         else:
-                            colsizes = [ int(math.ceil(x * 1.2)) for x in colsizes ]
+                            colsizes = [ max(min_size, int(math.ceil(x * 1.2))) for x in colsizes ]
                         for preview in preview_buf:
                             _write_cols(preview,colsizes,coltypes)
                         preview_buf = None
@@ -107,6 +107,7 @@ Options:
 -d delim    Use this (opposed to a tab) for the delimiter
 
 -max size   The maximum length of a column (default: unlimited)
+-min size   The minimum length of a column (default: 0)
 
 """ % os.path.basename(sys.argv[0])
     sys.exit(1)
@@ -116,6 +117,7 @@ def main(argv):
     lines = 100
     delim = '\t'
     max_size = None
+    min_size = 0
     last = None
     for arg in argv:
         if arg in ['-h','--help']:
@@ -126,17 +128,20 @@ def main(argv):
         elif last == '-d':
             delim = arg
             last = None
+        elif last == '-min':
+            min_size = int(arg)
+            last = None
         elif last == '-max':
             max_size = int(arg)
             last = None
-        elif arg in ['-l','-d','-max']:
+        elif arg in ['-l','-d','-max','-min']:
             last = arg
         elif arg == '-':
             fname = '-'
         elif os.path.exists(arg):
             fname = arg
         
-    tab_view(fname,lines,delim,max_size)
+    tab_view(fname,lines,delim,max_size, min_size)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
