@@ -36,7 +36,7 @@ def tab_reorder(fname, column_order, delim='\t'):
 
 
         sys.stdout.write('%s\n' % '\t'.join(outcols))
- 
+    f.close() 
     
 def usage(msg=""):
     if msg:

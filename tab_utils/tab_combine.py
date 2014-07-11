@@ -23,6 +23,7 @@ def tab_combine(outfile, fnames ,delim='\t'):
                 worksheet.write(row, col, val)
             row += 1
         sys.stderr.write("done\n")
+        f.close()
 
     workbook.close()
 
