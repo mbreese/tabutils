@@ -2,19 +2,25 @@
 '''
 Merges tab-delimited files together, combining common columns
 '''
-import sys,os
+import sys,os, gzip
 from support import filenames_to_uniq
 
 
 class MergeException(Exception):
     pass
     
-def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False):
-    names = filenames_to_uniq([os.path.basename(x) for x in fnames])
+def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False, given_names=None):
+    if given_names:
+        names = given_names
+    else:
+        names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     files = []
     file_col_count = 0
     for fname in fnames:
-        files.append(open(fname))
+        if fname[-3:] == '.gz':
+            files.append(gzip.open(fname))
+        else:
+            files.append(open(fname))
 
     commented_lines = {}
     for name,f in zip(names,files):
@@ -266,6 +272,7 @@ def main(argv):
     headercomment = False
     nomissing = False
     files=[]
+    given_names=[]
     
     last = None
     
@@ -276,7 +283,10 @@ def main(argv):
         if last == '-keycols':
             keycols = _split_cols(arg)
             last = None
-        elif arg == '-keycols':
+        elif last == '-names':
+            given_names = [x.strip() for x in arg.split(',')]
+            last = None
+        elif arg in ['-keycols', '-names']:
             last = arg
         elif arg == '-keydesc':
             keydesc = True
@@ -304,7 +314,7 @@ def main(argv):
     if not keycols:
         keycols = common
     
-    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc,nomissing)
+    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc,nomissing, given_names)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
