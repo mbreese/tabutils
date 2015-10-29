@@ -14,7 +14,7 @@ def tab_combine(outfile, fnames ,delim='\t'):
     for fname in fnames:
         sys.stderr.write(fname.rstrip(".gz").rstrip(".txt"))
         sys.stderr.write("... ")
-        worksheet = workbook.add_worksheet(fname.rstrip(".gz").rstrip(".txt"))
+        worksheet = workbook.add_worksheet(fname.rstrip(".gz").rstrip(".txt")[:31])
         f = gzip_opener(fname).open()
         row = 0
         for line in f:
