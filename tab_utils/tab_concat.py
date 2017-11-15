@@ -12,16 +12,40 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     fobjs = []
     nextLines = []
+    headerCols = None
+
+    writtenLines = set()
     for fname in fnames:
         f=open(fname)
         line = f.next()
         while line[0] == '#':
-            sys.stdout.write(line)
+            if not line in writtenLines:
+                writtenLines.add(line)
+                sys.stdout.write(line)
             line = f.next()
         nextLines.append(line)
         fobjs.append(f)
 
     if not no_header:
+        # there is a header...
+
+        headerCols = []
+        headerNames = None
+        for line in nextLines:
+            cols = line.rstrip('\n').split('\t')
+            if not headerNames:
+                headerNames = cols
+                headerCols.append([])
+                for idx,col in enumerate(cols):
+                    headerCols[0].append(idx)
+            else:
+                lookup=[0,] * len(headerNames)
+                for i,c1 in enumerate(cols):
+                    for j, c2 in enumerate(headerNames):
+                        if c1 == c2:
+                            lookup[i] = j
+                headerCols.append(lookup)
+
         if add_fname:
             cols = nextLines[0].rstrip().split('\t')
             cols.insert(0, fname_label)
@@ -32,22 +56,29 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
         nextLines = None
 
     if nextLines:
+        # there is no header, so just output cols
         for name, line in zip(names, nextLines):
+            cols = line.rstrip('\n').split('\t')
             if add_fname:
-                cols = line.rstrip().split('\t')
                 cols.insert(0, name)
-                sys.stdout.write("%s\n" % "\t".join(cols))
             else:
-                sys.stdout.write(line)
+                sys.stdout.write("%s\n" % "\t".join(cols))
                 
-    for name, f in zip(names, fobjs):
+    for i, (name, f) in enumerate(zip(names, fobjs)):
+#        print headerCols[i]
         for line in f:
+            cols = line.rstrip('\n').split('\t')
+            outcols = cols[:]
+            if headerCols:
+                for j, val in enumerate(headerCols[i]):
+#                    print "outcols[%s] = cols[%s] (%s)" % (val, j, cols[j])
+                    outcols[val] = cols[j]
+
             if add_fname:
-                cols = line.rstrip().split('\t')
-                cols.insert(0, name)
-                sys.stdout.write("%s\n" % "\t".join(cols))
-            else:
-                sys.stdout.write(line+"\n")
+                outcols.insert(0, name)
+
+            sys.stdout.write("%s\n" % "\t".join(outcols))
+
         f.close()
     
 
