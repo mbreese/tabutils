@@ -3,7 +3,7 @@
 Concats multiple tab-delimited files into one text file (with a optional extra column added for the filename)
 '''
 
-import sys,os
+import sys,os,gzip
 
 from support import gzip_opener
 from support import filenames_to_uniq
@@ -16,7 +16,10 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
 
     writtenLines = set()
     for fname in fnames:
-        f=open(fname)
+        if fname[:-3] == '.gz':
+            f=gzip.open(fname)
+        else:
+            f=open(fname)
         line = f.next()
         while line[0] == '#':
             if not line in writtenLines:
