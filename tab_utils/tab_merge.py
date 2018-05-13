@@ -146,7 +146,16 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
             keys = []
             for j,num in zip(keycols[0],keycols[1]):
                 if num and not headers:
-                    keys.append(float(cols[j]))
+                    try:
+                        keys.append(float(cols[j]))
+                    except ValueError, e:
+                        sys.stderr.write(str(e))
+                        sys.stderr.write('\n\n')
+                        sys.stderr.write('Error\nline:\n%s\n' % line)
+                        sys.stderr.write('cols:\n%s\n' % ','.join(cols))
+                        for foo1, foo2 in zip(fnames, lines):
+                            sys.stderr.write('%s => %s\n' % (foo1, foo2))
+                        sys.exit(1)
                 else:
                     keys.append(cols[j])
             common_keys.append((keys,i))
