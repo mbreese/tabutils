@@ -16,7 +16,7 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
 
     writtenLines = set()
     for fname in fnames:
-        if fname[:-3] == '.gz':
+        if fname[-3:] == '.gz':
             f=gzip.open(fname)
         else:
             f=open(fname)
