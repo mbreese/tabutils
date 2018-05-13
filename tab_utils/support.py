@@ -39,36 +39,35 @@ def filenames_to_uniq(names,new_delim='.'):
         returns: ['AA.BB','CC']
     
     '''
-    name_words = []
-    maxlen = 0
-    for name in names:
-        name_words.append(name.replace('.',' ').replace('-',' ').strip().split())
-        name_words[-1].reverse()
-        if len(name_words[-1]) > maxlen:
-            maxlen = len(name_words[-1])
+    prefix = 0
+    suffix = -1 
 
-    common = [False,] * maxlen
-    for i in xrange(maxlen):
-        last = None
-        same = True
-        for nameword in name_words:
-            if i >= len(nameword):
-                same = False
+    common = True
+
+    while common:
+        for name in names[1:]:
+            if name[prefix] != names[0][prefix]:
+                common = False
                 break
-            if not last:
-                last = nameword[i]
-            elif nameword[i] != last:
-                same = False
+        if common:
+            prefix += 1
+
+    common = True
+
+    while common:
+        for name in names[1:]:
+            if name[suffix] != names[0][suffix]:
+                suffix += 1
+                common = False
                 break
-        common[i] = same
+        if common:
+            suffix -= 1
 
     newnames = []
-    for nameword in name_words:
-        nn = []
-        for (i, val) in enumerate(common):
-            if not val and i < len(nameword):
-                nn.append(nameword[i])
-        nn.reverse()
-        newnames.append(new_delim.join(nn))
-        
+    for name in names:
+        if suffix == 0:
+            newnames.append(name[prefix:])
+        else:
+            newnames.append(name[prefix:suffix])
+
     return newnames
