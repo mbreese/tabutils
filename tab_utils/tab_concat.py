@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 '''
 Concats multiple tab-delimited files into one text file (with a optional extra column added for the filename)
+If a file has missing columns, they will be blank
+If a file has extra columns, the will be silently removed
+
+If there is no header, this goes out the window :)
+
 '''
 
 import sys,os,gzip
@@ -32,17 +37,20 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
     if not no_header:
         # there is a header...
 
-        headerCols = []
-        headerNames = None
+        headerCols = [] # list of lists; each list is the out-col index for the columns in this file
+        headerNames = None # the main output header
+        # read the column headers...
         for line in nextLines:
             cols = line.rstrip('\n').split('\t')
             if not headerNames:
+                # first file, these are the headers we will use (and the order)
                 headerNames = cols
                 headerCols.append([])
                 for idx,col in enumerate(cols):
                     headerCols[0].append(idx)
             else:
-                lookup=[0,] * len(headerNames)
+                # look up the header column names
+                lookup=[-1,] * len(headerNames)
                 for i,c1 in enumerate(cols):
                     for j, c2 in enumerate(headerNames):
                         if c1 == c2:
@@ -71,11 +79,16 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
 #        print headerCols[i]
         for line in f:
             cols = line.rstrip('\n').split('\t')
-            outcols = cols[:]
+            outcols = ['',] * len(headerCols[0])
+
             if headerCols:
+                # we have headers, so let's match them up...
                 for j, val in enumerate(headerCols[i]):
-#                    print "outcols[%s] = cols[%s] (%s)" % (val, j, cols[j])
-                    outcols[val] = cols[j]
+                    # j is the column in the file
+                    # val is the target column
+
+                    if val > -1:
+                        outcols[val] = cols[j]
 
             if add_fname:
                 outcols.insert(0, name)
@@ -131,4 +144,3 @@ def main(argv):
     
 if __name__ == '__main__':
     main(sys.argv[1:])
-
