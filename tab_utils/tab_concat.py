@@ -50,7 +50,7 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
                     headerCols[0].append(idx)
             else:
                 # look up the header column names
-                lookup=[-1,] * len(headerNames)
+                lookup=[-1,] * len(cols)
                 for i,c1 in enumerate(cols):
                     for j, c2 in enumerate(headerNames):
                         if c1 == c2:
