@@ -87,7 +87,7 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
                     # j is the column in the file
                     # val is the target column
 
-                    if val > -1:
+                    if val > -1 and len(cols) > j:
                         outcols[val] = cols[j]
 
             if add_fname:
