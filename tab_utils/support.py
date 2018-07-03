@@ -13,7 +13,13 @@ class gzip_opener:
     def __enter__(self):
         if self.fname == '-':
             self.f = sys.stdin
-        elif self.fname[-3:] == '.gz':
+            return self.f
+        
+        f = open(os.path.expanduser(self.fname))
+        magic = f.read(2)
+        f.close()
+        if magic[0] == b'\x1f' and magic[1] == b'\x8b':
+        #elif self.fname[-3:] == '.gz':
             self.f = gzip.open(os.path.expanduser(self.fname))
         else:
             self.f = open(os.path.expanduser(self.fname))
