@@ -13,7 +13,7 @@ import sys,os,gzip
 from support import gzip_opener
 from support import filenames_to_uniq
 
-def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample"):
+def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample", pre=''):
     names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     fobjs = []
     nextLines = []
@@ -34,10 +34,10 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
         nextLines.append(line)
         fobjs.append(f)
 
+    headerCols = [] # list of lists; each list is the out-col index for the columns in this file
     if not no_header:
         # there is a header...
 
-        headerCols = [] # list of lists; each list is the out-col index for the columns in this file
         headerNames = None # the main output header
         # read the column headers...
         for line in nextLines:
@@ -58,7 +58,7 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
                 headerCols.append(lookup)
 
         if add_fname:
-            cols = nextLines[0].rstrip().split('\t')
+            cols = nextLines[0].rstrip('\n').split('\t')
             cols.insert(0, fname_label)
             sys.stdout.write("%s\n" % "\t".join(cols))
         else:
@@ -70,28 +70,43 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample")
         # there is no header, so just output cols
         for name, line in zip(names, nextLines):
             cols = line.rstrip('\n').split('\t')
-            if add_fname:
-                cols.insert(0, name)
-            else:
-                sys.stdout.write("%s\n" % "\t".join(cols))
-                
+            headerCols.append(list(range(0,len(cols))))
+#            if add_fname:
+#                cols.insert(0, '%s%s' % (pre, name))
+#            sys.stdout.write("%s\n" % "\t".join(cols))
+               
     for i, (name, f) in enumerate(zip(names, fobjs)):
+        if nextLines and nextLines[i]:
+            cols = nextLines[i].rstrip('\n').split('\t')
+            outcols = ['',] * len(headerCols[0])
+            for j, val in enumerate(headerCols[i]):
+                # j is the column in the file
+                # val is the target column
+
+                if val > -1 and len(cols) > j:
+                    outcols[val] = cols[j]
+
+            if add_fname:
+                outcols.insert(0, '%s%s' %  (pre, name))
+
+            sys.stdout.write("%s\n" % "\t".join(outcols))
+
+
 #        print headerCols[i]
         for line in f:
             cols = line.rstrip('\n').split('\t')
             outcols = ['',] * len(headerCols[0])
 
-            if headerCols:
-                # we have headers, so let's match them up...
-                for j, val in enumerate(headerCols[i]):
-                    # j is the column in the file
-                    # val is the target column
+            # we have headers, so let's match them up...
+            for j, val in enumerate(headerCols[i]):
+                # j is the column in the file
+                # val is the target column
 
-                    if val > -1 and len(cols) > j:
-                        outcols[val] = cols[j]
+                if val > -1 and len(cols) > j:
+                    outcols[val] = cols[j]
 
             if add_fname:
-                outcols.insert(0, name)
+                outcols.insert(0, '%s%s' %  (pre, name))
 
             sys.stdout.write("%s\n" % "\t".join(outcols))
 
@@ -107,6 +122,7 @@ def usage(msg=""):
 Options:
     -n          Add the filename as a column
     -l val      Use this label for the filename column (auto-sets -n, defaults to "file")
+    -pre val    Add this prefix to the auto-extracted label (based on filename)
     -noheader   There is no header line
 
 """ % os.path.basename(sys.argv[0])
@@ -118,6 +134,8 @@ def main(argv):
     label = "file"
     add_fname = False
     no_header = False
+    pre = ""
+
     last = None
     for arg in argv:
         if arg in ['-h','--help']:
@@ -126,7 +144,11 @@ def main(argv):
             label = arg
             add_fname = True
             last = None
-        elif arg in ['-l']:
+        elif last == '-pre':
+            pre = arg
+            add_fname = True
+            last = None
+        elif arg in ['-l', '-pre']:
             last = arg
         elif arg == '-n':
             add_fname = True;
@@ -140,7 +162,8 @@ def main(argv):
     if not fnames:
         usage("Missing input filename(s)!")
 
-    tab_concat(fnames, add_fname, no_header, label)
+    tab_concat(fnames, add_fname, no_header, label, pre)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
+

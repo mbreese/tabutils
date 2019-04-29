@@ -17,10 +17,18 @@ def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collat
     files = []
     file_col_count = 0
     for fname in fnames:
-        if fname[-3:] == '.gz':
-            files.append(gzip.open(fname))
+        f = open(os.path.expanduser(fname))
+        magic = f.read(2)
+        f.close()
+        if magic[0] == b'\x1f' and magic[1] == b'\x8b':
+            files.append(gzip.open(os.path.expanduser(fname)))
         else:
-            files.append(open(fname))
+            files.append(open(os.path.expanduser(fname)))
+
+        #if fname[-3:] == '.gz':
+        #    files.append(gzip.open(fname))
+        #else:
+        #    files.append(open(fname))
 
     commented_lines = {}
     for name,f in zip(names,files):
