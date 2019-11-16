@@ -9,11 +9,14 @@ from support import filenames_to_uniq
 class MergeException(Exception):
     pass
     
-def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False, given_names=None):
+def merge_files(fnames,common_cols,uncommon_cols, keycols, noheader=False,collate=True,headercomment=False,keydesc=False,nomissing=False, given_names=None, pre=None):
     if given_names:
         names = given_names
     else:
         names = filenames_to_uniq([os.path.basename(x) for x in fnames])
+        if pre:
+            names = ['%s%s' % (pre, x) for x in names]
+        
     files = []
     file_col_count = 0
     for fname in fnames:
@@ -243,6 +246,8 @@ Options:
     -noheader          the files have no header row
     -nomissing         discard rows with missing values
     -collate           order uncommon values by file first, not column
+    -names n1,n2,n3... Comma-separated list of sample names (used instead of filenames)
+    -pre val           If columns are derived from filenames, add this set prefix to the column names
     
     -keycols col,col   if there are missing values, use these columns to 
                        determine which file has missing data.  If the col ends 
@@ -285,6 +290,7 @@ def main(argv):
     common = None
     uncommon = None
     keycols = None
+    pre = None
     keydesc = False
     headercomment = False
     nomissing = False
@@ -300,10 +306,13 @@ def main(argv):
         if last == '-keycols':
             keycols = _split_cols(arg)
             last = None
+        elif last == '-pre':
+            pre = arg
+            last = None
         elif last == '-names':
             given_names = [x.strip() for x in arg.split(',')]
             last = None
-        elif arg in ['-keycols', '-names']:
+        elif arg in ['-keycols', '-names', '-pre']:
             last = arg
         elif arg == '-keydesc':
             keydesc = True
@@ -331,7 +340,7 @@ def main(argv):
     if not keycols:
         keycols = common
     
-    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc,nomissing, given_names)
+    merge_files(files,common[0],uncommon[0],keycols,noheader,collate,headercomment,keydesc,nomissing, given_names, pre)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

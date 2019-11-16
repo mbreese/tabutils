@@ -13,8 +13,9 @@ import sys,os,gzip
 from support import gzip_opener
 from support import filenames_to_uniq
 
-def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample", pre=''):
-    names = filenames_to_uniq([os.path.basename(x) for x in fnames])
+def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample", pre='', names=None):
+    if not names:
+        names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     fobjs = []
     nextLines = []
     headerCols = None
@@ -23,6 +24,8 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample",
     for fname in fnames:
         if fname[-3:] == '.gz':
             f=gzip.open(fname)
+        elif fname == '-':
+            f = sys.stdin
         else:
             f=open(fname)
         line = f.next()
@@ -110,7 +113,8 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample",
 
             sys.stdout.write("%s\n" % "\t".join(outcols))
 
-        f.close()
+        if f != sys.stdin:
+            f.close()
     
 
 def usage(msg=""):
@@ -120,16 +124,19 @@ def usage(msg=""):
     print """Usage: %s {opts} filename1.tab filename2...
 
 Options:
-    -n          Add the filename as a column
-    -l val      Use this label for the filename column (auto-sets -n, defaults to "file")
-    -pre val    Add this prefix to the auto-extracted label (based on filename)
-    -noheader   There is no header line
+    -n                     Add the filename as a column (only the unique part of the name is used)
+    -names val,val,...     Use these values instead of the filename (comma-separated)
+    -l val                 Use this label for the filename column in the header (auto-sets -n, defaults to "file")
+    -pre val               Add this prefix to the auto-extracted label (based on filename)
+    -noheader              There is no header line
 
 """ % os.path.basename(sys.argv[0])
     sys.exit(1)
     
 def main(argv):
     fnames = []
+
+    names = None
 
     label = "file"
     add_fname = False
@@ -144,25 +151,30 @@ def main(argv):
             label = arg
             add_fname = True
             last = None
+        elif last == '-names':
+            names = arg.split(',')
+            last = None
         elif last == '-pre':
             pre = arg
             add_fname = True
             last = None
-        elif arg in ['-l', '-pre']:
+        elif arg in ['-l', '-pre','-names']:
             last = arg
         elif arg == '-n':
             add_fname = True;
         elif arg == '-noheader':
             no_header = True;
-        elif os.path.exists(arg):
+        elif os.path.exists(arg) or arg == '-':
             fnames.append(arg)
         else:
             usage("Unknown option (or missing file): %s" % arg)
 
     if not fnames:
         usage("Missing input filename(s)!")
+    if names and len(names) != len(fnames):
+        usage("-names should have the same number of values as the number of filenames!")
 
-    tab_concat(fnames, add_fname, no_header, label, pre)
+    tab_concat(fnames, add_fname, no_header, label, pre, names)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
