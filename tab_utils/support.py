@@ -50,7 +50,7 @@ def filenames_to_uniq(names,new_delim='.'):
 
     common = True
 
-    while common:
+    while common and prefix < len(names[0]):
         for name in names[1:]:
             if name[prefix] != names[0][prefix]:
                 common = False
@@ -60,7 +60,7 @@ def filenames_to_uniq(names,new_delim='.'):
 
     common = True
 
-    while common:
+    while common and abs(suffix) < len(names[0]):
         for name in names[1:]:
             if name[suffix] != names[0][suffix]:
                 suffix += 1
@@ -71,7 +71,9 @@ def filenames_to_uniq(names,new_delim='.'):
 
     newnames = []
     for name in names:
-        if suffix == 0:
+        if abs(suffix) == prefix:
+            newnames.append(name)
+        elif suffix == 0:
             newnames.append(name[prefix:])
         else:
             newnames.append(name[prefix:suffix])

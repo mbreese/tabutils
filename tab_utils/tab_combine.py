@@ -8,8 +8,8 @@ import xlsxwriter
 
 from support import gzip_opener
 
-def tab_combine(outfile, fnames ,delim='\t'):
-    workbook = xlsxwriter.Workbook(outfile, {'strings_to_numbers': True})
+def tab_combine(outfile, fnames ,delim='\t', exclude_comments=False, nourl=False):
+    workbook = xlsxwriter.Workbook(outfile, {'strings_to_numbers': True,  'strings_to_urls': not nourl })
 
     for fname in fnames:
         sys.stderr.write(fname.rstrip(".gz").rstrip(".txt"))
@@ -18,6 +18,9 @@ def tab_combine(outfile, fnames ,delim='\t'):
         f = gzip_opener(fname).open()
         row = 0
         for line in f:
+            if exclude_comments and line[0] == '#':
+                continue
+            line = line.decode('utf-8')
             cols = line.rstrip().split(delim)
             for col, val in enumerate(cols):
                 worksheet.write(row, col, val)
@@ -27,8 +30,8 @@ def tab_combine(outfile, fnames ,delim='\t'):
 
     workbook.close()
 
- 
-    
+
+
 def usage(msg=""):
     if msg:
         print msg
@@ -36,8 +39,10 @@ def usage(msg=""):
     print """Usage: %s {opts} outfile.xlsx filename1.tab filename2...
 
 Options:
-    -f          Force overwriting the output file.
-    -d delim    Use this (opposed to a tab) for the delimiter
+    --no-comments   Don't inclue comments in the worksheets
+    --no-urls       Don't convert URLs to hyperlinks
+    -f              Force overwriting the output file.
+    -d delim        Use this (opposed to a tab) for the delimiter
 
 """ % os.path.basename(sys.argv[0])
     sys.exit(1)
@@ -48,6 +53,8 @@ def main(argv):
 
     delim = '\t'
     force = False
+    exclude_comments = False
+    nourl = False
     last = None
     for arg in argv:
         if arg in ['-h','--help']:
@@ -57,6 +64,10 @@ def main(argv):
             last = None
         elif arg in ['-d']:
             last = arg
+        elif arg == '--no-urls':
+            nourl = True;
+        elif arg == '--no-comments':
+            exclude_comments = True;
         elif arg == '-f':
             force = True;
         elif not outfile:
@@ -70,7 +81,7 @@ def main(argv):
     if not outfile or not fnames:
         usage("Missing output file or input filename(s)!")
 
-    tab_combine(outfile, fnames, delim)
+    tab_combine(outfile, fnames, delim, exclude_comments, nourl)
     
 if __name__ == '__main__':
     main(sys.argv[1:])

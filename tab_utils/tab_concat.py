@@ -2,7 +2,7 @@
 '''
 Concats multiple tab-delimited files into one text file (with a optional extra column added for the filename)
 If a file has missing columns, they will be blank
-If a file has extra columns, the will be silently removed
+If a file has extra columns, the will be added to the end
 
 If there is no header, this goes out the window :)
 
@@ -13,7 +13,7 @@ import sys,os,gzip
 from support import gzip_opener
 from support import filenames_to_uniq
 
-def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample", pre='', names=None):
+def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample", pre='', names=None, split_header_delim=''):
     if not names:
         names = filenames_to_uniq([os.path.basename(x) for x in fnames])
     fobjs = []
@@ -22,50 +22,76 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample",
 
     writtenLines = set()
     for fname in fnames:
-        if fname[-3:] == '.gz':
+        if fname[-3:] == '.gz' or fname[-4:] == '.bgz':
             f=gzip.open(fname)
         elif fname == '-':
             f = sys.stdin
         else:
             f=open(fname)
-        line = f.next()
-        while line[0] == '#':
+        
+        try:
+            line = f.next()
+        except StopIteration:
+            line = None
+
+        if not line:
+            f.close()
+            # empty file
+            continue
+
+        while line and line[0] == '#':
             if not line in writtenLines:
                 writtenLines.add(line)
                 sys.stdout.write(line)
             line = f.next()
+            
         nextLines.append(line)
         fobjs.append(f)
 
     headerCols = [] # list of lists; each list is the out-col index for the columns in this file
+    headerNames = [] # the main output header
     if not no_header:
         # there is a header...
 
-        headerNames = None # the main output header
         # read the column headers...
         for line in nextLines:
             cols = line.rstrip('\n').split('\t')
-            if not headerNames:
-                # first file, these are the headers we will use (and the order)
-                headerNames = cols
-                headerCols.append([])
-                for idx,col in enumerate(cols):
-                    headerCols[0].append(idx)
-            else:
-                # look up the header column names
-                lookup=[-1,] * len(cols)
-                for i,c1 in enumerate(cols):
-                    for j, c2 in enumerate(headerNames):
-                        if c1 == c2:
-                            lookup[i] = j
-                headerCols.append(lookup)
+            if split_header_delim:
+                cols2 = []
+                for v in cols:
+                    spl = v.split(split_header_delim)
+                    if len(spl) > 1:
+                        cols2.append(spl[1])
+                    else:
+                        cols2.append(v)
+                cols = cols2
 
+#            if not headerNames:
+#                # first file, these are the headers we will use (and the order)
+#                headerNames = cols
+#                headerCols.append([])
+#                for idx,col in enumerate(cols):
+#                    headerCols[0].append(idx)
+#            else:
+                # look up the header column names
+            lookup=[-1,] * len(cols)
+            for i,c1 in enumerate(cols):
+                found = False
+                for j, c2 in enumerate(headerNames):
+                    if c1 == c2:
+                        lookup[i] = j
+                        found = True
+                if not found:
+                    # add extra columns at the end of header
+                    lookup[i] = len(headerNames)
+                    headerNames.append(c1)
+            headerCols.append(lookup)
+
+        # write your header
+        cols = headerNames[:] # get a copy!
         if add_fname:
-            cols = nextLines[0].rstrip('\n').split('\t')
             cols.insert(0, fname_label)
-            sys.stdout.write("%s\n" % "\t".join(cols))
-        else:
-            sys.stdout.write(nextLines[0])
+        sys.stdout.write("%s\n" % "\t".join(cols))
 
         nextLines = None
 
@@ -74,9 +100,9 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample",
         for name, line in zip(names, nextLines):
             cols = line.rstrip('\n').split('\t')
             headerCols.append(list(range(0,len(cols))))
-#            if add_fname:
-#                cols.insert(0, '%s%s' % (pre, name))
-#            sys.stdout.write("%s\n" % "\t".join(cols))
+#           if add_fname:
+#               cols.insert(0, '%s%s' % (pre, name))
+#           sys.stdout.write("%s\n" % "\t".join(cols))
                
     for i, (name, f) in enumerate(zip(names, fobjs)):
         if nextLines and nextLines[i]:
@@ -95,10 +121,12 @@ def tab_concat(fnames, add_fname=False, no_header=False, fname_label = "sample",
             sys.stdout.write("%s\n" % "\t".join(outcols))
 
 
-#        print headerCols[i]
         for line in f:
             cols = line.rstrip('\n').split('\t')
-            outcols = ['',] * len(headerCols[0])
+            if headerNames:
+                outcols = ['',] * len(headerNames)
+            else:
+                outcols = ['',] * len(headerCols[0])
 
             # we have headers, so let's match them up...
             for j, val in enumerate(headerCols[i]):
@@ -142,6 +170,7 @@ def main(argv):
     add_fname = False
     no_header = False
     pre = ""
+    split_header_delim = ""
 
     last = None
     for arg in argv:
@@ -154,11 +183,14 @@ def main(argv):
         elif last == '-names':
             names = arg.split(',')
             last = None
+        elif last == '-header-delim':
+            split_header_delim = arg
+            last = None
         elif last == '-pre':
             pre = arg
             add_fname = True
             last = None
-        elif arg in ['-l', '-pre','-names']:
+        elif arg in ['-l', '-pre','-names', '-header-delim']:
             last = arg
         elif arg == '-n':
             add_fname = True;
@@ -174,7 +206,7 @@ def main(argv):
     if names and len(names) != len(fnames):
         usage("-names should have the same number of values as the number of filenames!")
 
-    tab_concat(fnames, add_fname, no_header, label, pre, names)
+    tab_concat(fnames, add_fname, no_header, label, pre, names, split_header_delim)
     
 if __name__ == '__main__':
     main(sys.argv[1:])
